@@ -26,7 +26,7 @@ KalmanMuonCalibrator::KalmanMuonCalibrator() {
   etaAxis_ = new TAxis(nEtaBins_,etaBins);
 
   double phiBins[] ={-M_PI,-5.0*M_PI/6.0,-4.0*M_PI/6.0,-3.0*M_PI/6.0,-2*M_PI/6.0,-1.0*M_PI/6.0,0.0,M_PI/6.0,2*M_PI/6.0,3*M_PI/6.0,4*M_PI/6.0,5*M_PI/6.0,M_PI};
-    nPhiBins_ = 12;
+  nPhiBins_ = 12;
     //double phiBins[] ={-M_PI,M_PI};
     //  nPhiBins_ = 1;
 
@@ -82,15 +82,15 @@ KalmanMuonCalibrator::~KalmanMuonCalibrator() {
 unsigned int KalmanMuonCalibrator::getBin(Measurement histo,float eta,float phi) {
 
   switch(histo) {
-  case A:
+    case A:
     return 0;
-  case K:
+    case K:
     return 1;
-  case L:
+    case L:
     return 2+etaAxis_->FindBin(eta)-1;
-  case e:
+    case e:
     return 2+nEtaBins_+etaMaterialAxis_->FindBin(eta)-1;
-  case B:
+    case B:
     return 2+nEtaBins_+nEtaMaterialBins_+etaAxis_->FindBin(eta)+nEtaBins_*(phiAxis_->FindBin(phi)-1)-1;
   }
   return -1;
@@ -102,7 +102,7 @@ void KalmanMuonCalibrator::resetDerivative() {
   }
 }
 
-  
+
 void KalmanMuonCalibrator::processLine(double c1,double eta1,double phi1,double c2,double eta2,double phi2,double scale,double resolution,int Z) {
   double a_1 = getData(A,eta1,phi1);
   double k_1 = getData(K,eta1,phi1);
@@ -160,15 +160,33 @@ void KalmanMuonCalibrator::processLine(double c1,double eta1,double phi1,double 
   calculator_->iterate(scale-h,resolution,derivative_);  
 }
 
+void KalmanMuonCalibrator::processLineSingleMu(double c1,double eta1,double phi1,int charge,double scale,double resolution) {
+
+  double a_1 = getData(A,eta1,phi1);
+  double k_1 = getData(K,eta1,phi1);
+  double l_1 = getData(L,eta1,phi1);
+  double b_1 = getData(B,eta1,phi1);
+  double e_1 = getData(e,eta1,phi1);
+  double st1 = sin(2*atan(exp(-eta1))); 
 
 
+  double magnetic1 = a_1+k_1*eta1*eta1;
+  double material1= -e_1*st1*c1;
+  double term1 = magnetic1+material1+charge*b_1/c1;
+  
+  double h= term1;
+  
+  resetDerivative();
+
+  addDerivative(A,eta1,phi1,1.0);
+  addDerivative(K,eta1,phi1,eta1*eta1);
+  addDerivative(e,eta1,phi1,-st1*c1);
+  addDerivative(B,eta1,phi1,charge/c1);
+
+  calculator_->iterate(scale-h,resolution,derivative_);  
+}
 
 
-
-
-
-
- 
 double KalmanMuonCalibrator::getData(Measurement histo,float eta,float phi) {
   unsigned int bin = getBin(histo,eta,phi);
   return data_[bin];
@@ -183,55 +201,81 @@ void KalmanMuonCalibrator::setData(Measurement histo,float eta,float phi,double 
 void KalmanMuonCalibrator::addDerivative(Measurement histo,float eta,float phi,double data) {
   unsigned int bin = getBin(histo,eta,phi);
   derivative_[bin]=derivative_[bin]+data;
+}
+
+
+
+void KalmanMuonCalibrator::processFile(const char* file,const char* treeName) {
+ TFile *f = new TFile(file);
+ TTree *dataset = (TTree*)f->Get(treeName);
+ unsigned int entries = dataset->GetEntries();
+ float c1,eta1,phi1,c2,eta2,phi2,scale,resolution;
+
+ int Z=1;
+ char *str = (char*)file;
+ char *pch = strstr(str, "LowPt");
+
+ if (pch) {
+   Z=0;
+   printf ("Fitting Low PT for material"); 
  }
- 
-
-
- void KalmanMuonCalibrator::processFile(const char* file,const char* treeName) {
-   TFile *f = new TFile(file);
-   TTree *dataset = (TTree*)f->Get(treeName);
-   unsigned int entries = dataset->GetEntries();
-   float c1,eta1,phi1,c2,eta2,phi2,scale,resolution;
-
-   int Z=1;
-   char *str = (char*)file;
-   char *pch = strstr(str, "LowPt");
-
-   if (pch) {
-     Z=0;
-     printf ("Fitting Low PT for material"); 
-   }
-   else {
-     printf ("Fitting High PT\n"); 
-   }
-
-   dataset->SetBranchAddress("c1",&c1);
-   dataset->SetBranchAddress("c2",&c2);
-   dataset->SetBranchAddress("eta1",&eta1);
-   dataset->SetBranchAddress("eta2",&eta2);
-   dataset->SetBranchAddress("phi1",&phi1);
-   dataset->SetBranchAddress("phi2",&phi2);
-   dataset->SetBranchAddress("scale",&scale);
-   dataset->SetBranchAddress("resolution",&resolution);
-
-   for (unsigned int i=0;i<entries;++i) {
-     dataset->GetEntry(i);
-     processLine(c1,eta1,phi1,c2,eta2,phi2,scale,resolution,Z);
-     if (i % 5000000 == 0) {
-       printf("Processed %d/%d entries\n",i,entries);
-       char* newFile;
-       if(asprintf(&newFile,"previewMM_%d.root",i)<0)
-      	 continue;
-       save(newFile);
-      }
-
-   }
-   f->Close();
+ else {
+   printf ("Fitting High PT\n"); 
  }
 
+ dataset->SetBranchAddress("c1",&c1);
+ dataset->SetBranchAddress("c2",&c2);
+ dataset->SetBranchAddress("eta1",&eta1);
+ dataset->SetBranchAddress("eta2",&eta2);
+ dataset->SetBranchAddress("phi1",&phi1);
+ dataset->SetBranchAddress("phi2",&phi2);
+ dataset->SetBranchAddress("scale",&scale);
+ dataset->SetBranchAddress("resolution",&resolution);
 
+ for (unsigned int i=0;i<entries;++i) {
+   dataset->GetEntry(i);
+   processLine(c1,eta1,phi1,c2,eta2,phi2,scale,resolution,Z);
+   if (i % 5000000 == 0) {
+     printf("Processed %d/%d entries\n",i,entries);
+     char* newFile;
+     if(asprintf(&newFile,"previewMM_%d.root",i)<0)
+      continue;
+    save(newFile);
+  }
 
+}
+f->Close();
+}
 
+void KalmanMuonCalibrator::processFileSingleMu(const char* file,const char* treeName) {
+
+ std::cout << "single Mu " << std::endl; 
+ TFile *f = new TFile(file);
+ TTree *dataset = (TTree*)f->Get(treeName);
+ unsigned int entries = dataset->GetEntries();
+ float c1,eta1,phi1,charge,scale,resolution;
+
+ dataset->SetBranchAddress("reco_curv",&c1);
+ dataset->SetBranchAddress("reco_eta",&eta1);
+ dataset->SetBranchAddress("reco_phi",&phi1);
+ dataset->SetBranchAddress("reco_charge",&charge);
+ dataset->SetBranchAddress("scale",&scale);
+ dataset->SetBranchAddress("resolution",&resolution);
+
+ for (unsigned int i=0;i<entries;++i) {
+   dataset->GetEntry(i);
+   processLineSingleMu(c1,eta1,phi1,charge,scale,resolution);
+   if (i % 5000000 == 0) {
+     printf("Processed %d/%d entries\n",i,entries);
+     char* newFile;
+     if(asprintf(&newFile,"previewMM_%d.root",i)<0)
+      continue;
+    save(newFile);
+  }
+
+}
+f->Close();
+}
 
 
 TMatrixDSym KalmanMuonCalibrator::correlationMatrix() {
@@ -253,116 +297,116 @@ void KalmanMuonCalibrator::load(const char* file) {
     data_[i-1] = data->GetBinContent(i);
 }
 
- 
- void KalmanMuonCalibrator::save(const char* file) {
-   TFile *f = new TFile(file,"RECREATE");
-   f->cd();
-   const TMatrixDSym* covariance = calculator_->P();
-   TMatrixDSym correlation = correlationMatrix();
-   TH1D * data = new TH1D("data","data",totalBins_,0,totalBins_);
 
-   for (unsigned int i=0;i<totalBins_;++i) {
-     data->SetBinContent(i+1,data_[i]);
-     double sigma2 = (*covariance)[i][i];
-     if (sigma2>0.0)
-       data->SetBinError(i+1,sqrt(sigma2));
-   }
-   data->Write();  
-   covariance->Write("covariance");
-   correlation.Write("correlation");
+void KalmanMuonCalibrator::save(const char* file) {
+ TFile *f = new TFile(file,"RECREATE");
+ f->cd();
+ const TMatrixDSym* covariance = calculator_->P();
+ TMatrixDSym correlation = correlationMatrix();
+ TH1D * data = new TH1D("data","data",totalBins_,0,totalBins_);
+
+ for (unsigned int i=0;i<totalBins_;++i) {
+   data->SetBinContent(i+1,data_[i]);
+   double sigma2 = (*covariance)[i][i];
+   if (sigma2>0.0)
+     data->SetBinError(i+1,sqrt(sigma2));
+ }
+ data->Write();  
+ covariance->Write("covariance");
+ correlation.Write("correlation");
    //Diagonalize the matrix and save eigenvalues and eigenvectors
-   TMatrixDSymEigen eigen(*covariance);
-   TVectorD eigenvalues = eigen.GetEigenValues();
-   TMatrixD eigenvectors = eigen.GetEigenVectors();
-   eigenvalues.Write("eigenvalues");
-   eigenvectors.Write("eigenvectors");
-  
-   TH1D * magnetic = new TH1D("magnetic","A",2,0,2);
-   magnetic->SetBinContent(1,data_[0]);
-   magnetic->SetBinError(1,data->GetBinError(1));
-   magnetic->SetBinContent(2,data_[1]);
-   magnetic->SetBinError(2,data->GetBinError(2));
-   magnetic->Write();
+ TMatrixDSymEigen eigen(*covariance);
+ TVectorD eigenvalues = eigen.GetEigenValues();
+ TMatrixD eigenvectors = eigen.GetEigenVectors();
+ eigenvalues.Write("eigenvalues");
+ eigenvectors.Write("eigenvectors");
 
-    TH1D * K = new TH1D("L","K",nEtaBins_,etaAxis_->GetXbins()->GetArray());
-    for (unsigned int i=1;i<=nEtaBins_;++i) {
-      K->SetBinContent(i,data_[2+i-1]);
-      K->SetBinError(i,data->GetBinError(2+i));
-    }
-    K->Write();
+ TH1D * magnetic = new TH1D("magnetic","A",2,0,2);
+ magnetic->SetBinContent(1,data_[0]);
+ magnetic->SetBinError(1,data->GetBinError(1));
+ magnetic->SetBinContent(2,data_[1]);
+ magnetic->SetBinError(2,data->GetBinError(2));
+ magnetic->Write();
 
-
-    TH1D * e = new TH1D("e","e",nEtaMaterialBins_,etaMaterialAxis_->GetXbins()->GetArray());
-    for (unsigned int i=1;i<=nEtaMaterialBins_;++i) {
-      e->SetBinContent(i,data_[2+nEtaBins_+i-1]);
-      e->SetBinError(i,data->GetBinError(2+nEtaBins_+i));
-    }
-    e->Write();
+ TH1D * K = new TH1D("L","K",nEtaBins_,etaAxis_->GetXbins()->GetArray());
+ for (unsigned int i=1;i<=nEtaBins_;++i) {
+  K->SetBinContent(i,data_[2+i-1]);
+  K->SetBinError(i,data->GetBinError(2+i));
+}
+K->Write();
 
 
-
-    TH2D * b = new TH2D("B","B",nEtaBins_,etaAxis_->GetXbins()->GetArray(),nPhiBins_,phiAxis_->GetXbins()->GetArray());
-    for (unsigned int i=1;i<=nEtaBins_;++i) {
-      for (unsigned int j=1;j<=nPhiBins_;++j) {
-	b->SetBinContent(i,j,data_[2+nEtaBins_+nEtaMaterialBins_+i+(j-1)*nEtaBins_-1]);
-	b->SetBinError(i,j,data->GetBinError(2+nEtaBins_+nEtaMaterialBins_+i+(j-1)*nEtaBins_));
-      }
-    }
-    b->Write();
+TH1D * e = new TH1D("e","e",nEtaMaterialBins_,etaMaterialAxis_->GetXbins()->GetArray());
+for (unsigned int i=1;i<=nEtaMaterialBins_;++i) {
+  e->SetBinContent(i,data_[2+nEtaBins_+i-1]);
+  e->SetBinError(i,data->GetBinError(2+nEtaBins_+i));
+}
+e->Write();
 
 
-   f->Close();
 
-   
+TH2D * b = new TH2D("B","B",nEtaBins_,etaAxis_->GetXbins()->GetArray(),nPhiBins_,phiAxis_->GetXbins()->GetArray());
+for (unsigned int i=1;i<=nEtaBins_;++i) {
+  for (unsigned int j=1;j<=nPhiBins_;++j) {
+   b->SetBinContent(i,j,data_[2+nEtaBins_+nEtaMaterialBins_+i+(j-1)*nEtaBins_-1]);
+   b->SetBinError(i,j,data->GetBinError(2+nEtaBins_+nEtaMaterialBins_+i+(j-1)*nEtaBins_));
  }
+}
+b->Write();
+
+
+f->Close();
+
+
+}
 
 
 
 
- void KalmanMuonCalibrator::processFileMC(const char* file,const char* treeName) {
-   TFile *f = new TFile(file);
-   TTree *dataset = (TTree*)f->Get(treeName);
-   unsigned int entries = dataset->GetEntries();
-   float c1,eta1,phi1,c2,eta2,phi2,mass,gc1,gc2,cErr1,cErr2,genMass,resolution;
+void KalmanMuonCalibrator::processFileMC(const char* file,const char* treeName) {
+ TFile *f = new TFile(file);
+ TTree *dataset = (TTree*)f->Get(treeName);
+ unsigned int entries = dataset->GetEntries();
+ float c1,eta1,phi1,c2,eta2,phi2,mass,gc1,gc2,cErr1,cErr2,genMass,resolution;
 
-   int Z=0;
-   char *str = (char*)file;
-   char *pch = strstr(str, "Z");
-   if (pch) {
-     Z=1;
-     printf ("Fitting Z,ignore the material\n"); 
-   }
-   dataset->SetBranchAddress("c1",&c1);
-   dataset->SetBranchAddress("c2",&c2);
-   dataset->SetBranchAddress("cErr1",&cErr1);
-   dataset->SetBranchAddress("cErr2",&cErr2);
-   dataset->SetBranchAddress("gc1",&gc1);
-   dataset->SetBranchAddress("gc2",&gc2);
-   dataset->SetBranchAddress("eta1",&eta1);
-   dataset->SetBranchAddress("eta2",&eta2);
-   dataset->SetBranchAddress("phi1",&phi1);
-   dataset->SetBranchAddress("phi2",&phi2);
-   dataset->SetBranchAddress("mass",&mass);
-   dataset->SetBranchAddress("genMass",&genMass);
-   dataset->SetBranchAddress("resolution",&resolution);
-   
-
-
-   for (unsigned int i=0;i<entries;++i) {
-     dataset->GetEntry(i);
-     processLine(c1,eta1,phi1,c2,eta2,phi2,genMass/mass,resolution,Z);
-     if (i % 5000000 == 0) {
-       printf("Processed %d/%d entries\n",i,entries);
-       char* newFile;
-       if(asprintf(&newFile,"previewMC_%d.root",i)<0)
-	 continue;
-       save(newFile);
-
-     }
-
-   }
-   f->Close();
+ int Z=0;
+ char *str = (char*)file;
+ char *pch = strstr(str, "Z");
+ if (pch) {
+   Z=1;
+   printf ("Fitting Z,ignore the material\n"); 
  }
+ dataset->SetBranchAddress("c1",&c1);
+ dataset->SetBranchAddress("c2",&c2);
+ dataset->SetBranchAddress("cErr1",&cErr1);
+ dataset->SetBranchAddress("cErr2",&cErr2);
+ dataset->SetBranchAddress("gc1",&gc1);
+ dataset->SetBranchAddress("gc2",&gc2);
+ dataset->SetBranchAddress("eta1",&eta1);
+ dataset->SetBranchAddress("eta2",&eta2);
+ dataset->SetBranchAddress("phi1",&phi1);
+ dataset->SetBranchAddress("phi2",&phi2);
+ dataset->SetBranchAddress("mass",&mass);
+ dataset->SetBranchAddress("genMass",&genMass);
+ dataset->SetBranchAddress("resolution",&resolution);
+
+
+
+ for (unsigned int i=0;i<entries;++i) {
+   dataset->GetEntry(i);
+   processLine(c1,eta1,phi1,c2,eta2,phi2,genMass/mass,resolution,Z);
+   if (i % 5000000 == 0) {
+     printf("Processed %d/%d entries\n",i,entries);
+     char* newFile;
+     if(asprintf(&newFile,"previewMC_%d.root",i)<0)
+      continue;
+    save(newFile);
+
+  }
+
+}
+f->Close();
+}
 
 
 

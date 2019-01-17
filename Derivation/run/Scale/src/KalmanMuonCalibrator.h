@@ -12,6 +12,7 @@ class KalmanMuonCalibrator {
 
   void processFile(const char*,const char*);
   void processFileMC(const char*,const char*);
+  void processFileSingleMu(const char*,const char*);
   void save(const char*);
   void load(const char*);
 
@@ -44,6 +45,7 @@ class KalmanMuonCalibrator {
   void addDerivative(Measurement measurement,float eta,float phi,double data);
   void resetDerivative();
   void processLine(double c1,double eta1,double phi1,double c2,double eta2,double phi2,double scale,double resolution,int Z);
+  void processLineSingleMu(double c1,double eta1,double phi1,int charge,double scale,double resolution);
   TMatrixDSym correlationMatrix();
 
 

@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <iostream>
 #include "KalmanMuonCalibrator.h"
 
 
@@ -23,6 +24,7 @@ main (int argc, char **argv)
   bool MC=false;
   int c;
 
+  //apparently this is unused
   while ((c = getopt (argc, argv, "ml:")) != -1)
     switch (c) {
     case 'm':
@@ -34,19 +36,18 @@ main (int argc, char **argv)
     }
 
 
-
   for (int i=optind;i<argc;++i) {
     if (MC)
       calibrator->processFileMC(argv[i],"tree");
     else
-       calibrator->processFile(argv[i],"tree");
+       calibrator->processFileSingleMu(argv[i],"tree");
     char* newFile;
     if(asprintf(&newFile,"preview_%s",argv[i])<0)
       continue;
     calibrator->save(newFile);
   }
 
-  calibrator->save("calibration.root");
+  calibrator->save("calibrationSingleMu.root");
   delete calibrator;
   return 0;
 }
