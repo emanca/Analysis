@@ -7,4 +7,12 @@
 <use name="DataFormats/VertexReco"/>
 <use name="DataFormats/METReco"/>
 <use name="DataFormats/Math"/>
+<use name="DataFormats/Common"/>
+<use name="DataFormats/StdDictionaries"/>
+<use name="PhysicsTools/UtilAlgos"/>
+<use name="TrackingTools/TransientTrack"/>
+<use name="TrackingTools/Records"/>
+<use name="RecoVertex/LinearizationPointFinders"/>
+<use name="RecoVertex/KinematicFitPrimitives"/>
+<use name="RecoVertex/KinematicFit"/>
 <flags EDM_PLUGIN="1"/>
