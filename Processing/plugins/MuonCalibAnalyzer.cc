@@ -40,6 +40,7 @@
 #include "DataFormats/Math/interface/deltaR.h"
 #include "DataFormats/PatCandidates/interface/MET.h"
 #include "DataFormats/METReco/interface/PFMET.h"
+#include "SimDataFormats/GeneratorProducts/interface/GenEventInfoProduct.h"
 
 // required for Transient Tracks
 #include "TrackingTools/TransientTrack/interface/TransientTrack.h"
@@ -97,6 +98,7 @@ private:
   edm::EDGetTokenT<pat::PackedGenParticleCollection> genParticles_;
   edm::EDGetTokenT<reco::VertexCollection> vertices_;
   edm::EDGetTokenT<pat::METCollection> mets_;
+  edm::EDGetTokenT<GenEventInfoProduct> genInfoToken_;
 
   TFile *fout;
   TTree *tree;
@@ -144,13 +146,21 @@ private:
   float genMass;
   float recoil;
   float massvtx;
+  float xPV;
+  float yPV;
   float zPV;
+  float xvtx;
+  float yvtx;
   float zvtx;
+  float mcxvtx;
+  float mcyvtx;
   float mczvtx;
+  float mcxhs;
+  float mcyhs;
   float mczhs;
 
   int run;
-
+  float genWeight;
   bool isOnia_;
 };
 
@@ -249,6 +259,7 @@ MuonCalibAnalyzer::MuonCalibAnalyzer(const edm::ParameterSet &iConfig)
   genParticles_ = consumes<pat::PackedGenParticleCollection>(iConfig.getParameter<edm::InputTag>("genParticles"));
   vertices_ = consumes<reco::VertexCollection>(iConfig.getParameter<edm::InputTag>("vertices"));
   mets_ = consumes<pat::METCollection>(iConfig.getParameter<edm::InputTag>("met"));
+  genInfoToken_ = consumes<GenEventInfoProduct>(edm::InputTag("generator"));
 
   isOnia_ = iConfig.getParameter<bool>("isOnia");
 
@@ -295,10 +306,19 @@ MuonCalibAnalyzer::MuonCalibAnalyzer(const edm::ParameterSet &iConfig)
   tree->Branch("phivtx2", &phivtx2, "phivtx2/F");
   tree->Branch("ptErrvtx2", &ptErrvtx2, "ptErrvtx2/F");
   tree->Branch("massvtx", &massvtx, "massvtx/F");
+  tree->Branch("xPV", &xPV, "xPV/F");
+  tree->Branch("yPV", &yPV, "yPV/F");
   tree->Branch("zPV", &zPV, "zPV/F");
+  tree->Branch("xvtx", &xvtx, "xvtx/F");
+  tree->Branch("yvtx", &yvtx, "yvtx/F");
   tree->Branch("zvtx", &zvtx, "zvtx/F");
+  tree->Branch("mcxvtx", &mcxvtx, "mcxvtx/F");
+  tree->Branch("mcyvtx", &mcyvtx, "mcyvtx/F");
   tree->Branch("mczvtx", &mczvtx, "mczvtx/F");
+  tree->Branch("mcxhs", &mcxhs, "mcxhs/F");
+  tree->Branch("mcyhs", &mcyhs, "mcyhs/F");
   tree->Branch("mczhs", &mczhs, "mczhs/F");
+  tree->Branch("genWeight", &genWeight, "genWeight/F");
 }
 
 MuonCalibAnalyzer::~MuonCalibAnalyzer()
@@ -330,7 +350,14 @@ void MuonCalibAnalyzer::analyze(const edm::Event &iEvent, const edm::EventSetup 
         genMuons.push_back(p);
     }
     const pat::PackedGenParticle &proton = (*genParticlesH)[0];
+    mcxhs = proton.vx();
+    mcyhs = proton.vy();
     mczhs = proton.vz();
+
+    Handle<GenEventInfoProduct> genInfo;
+    iEvent.getByToken(genInfoToken_, genInfo);
+    GenEventInfoProduct genInfoP = *(genInfo.product());
+    genWeight = genInfoP.weight();
   }
 
   run = iEvent.run();
@@ -342,6 +369,8 @@ void MuonCalibAnalyzer::analyze(const edm::Event &iEvent, const edm::EventSetup 
     return;
 
   const reco::Vertex &vertex = vertexH->at(0);
+  xPV = vertex.position().x();
+  yPV = vertex.position().y();
   zPV = vertex.position().z();
 
   Handle<pat::MuonCollection> muonH;
@@ -395,13 +424,22 @@ void MuonCalibAnalyzer::analyze(const edm::Event &iEvent, const edm::EventSetup 
         if (ptr1 >= 0)
         {
           mcpt1 = genMuons[ptr1].pt();
+          mceta1 = genMuons[ptr1].eta();
+          mcphi1 = genMuons[ptr1].phi();
           gc1 = 1.0 / mcpt1;
+          mcxvtx = genMuons[ptr1].vx();
+          mcyvtx = genMuons[ptr1].vy();
           mczvtx = genMuons[ptr1].vz();
         }
         else
         {
           mcpt1 = -1.0;
+          mceta1 = -1.0;
+          mcphi1 = -1.0;
           gc1 = -1.0;
+          mcxvtx = -9999.;
+          mcyvtx = -9999.;
+          mczvtx = -9999.;
         }
 
         dxy1 = pos.innerTrack()->dxy(vertex.position());
@@ -426,12 +464,16 @@ void MuonCalibAnalyzer::analyze(const edm::Event &iEvent, const edm::EventSetup 
         if (ptr2 >= 0)
         {
           mcpt2 = genMuons[ptr2].pt();
+          mceta2 = genMuons[ptr2].eta();
+          mcphi2 = genMuons[ptr2].phi();
           gc2 = 1.0 / mcpt2;
         }
         else
         {
-          mcpt2 = -1;
-          gc2 = -1;
+          mcpt2 = -1.;
+          mceta2 = -1.;
+          mcphi2 = -1.;
+          gc2 = -1.;
         }
 
         math::PtEtaPhiMLorentzVector posVec(pt1, eta1, phi1, 0.105658);
@@ -491,6 +533,8 @@ void MuonCalibAnalyzer::analyze(const edm::Event &iEvent, const edm::EventSetup 
           //getting the dimuon decay vertex
           //RefCountedKinematicVertex
           dimu_vertex = KinTree->currentDecayVertex();
+          xvtx = dimu_vertex->position().x();
+          yvtx = dimu_vertex->position().y();
           zvtx = dimu_vertex->position().z();
           //Now navigating down the tree
           bool child = KinTree->movePointerToTheFirstChild();
@@ -513,7 +557,6 @@ void MuonCalibAnalyzer::analyze(const edm::Event &iEvent, const edm::EventSetup 
             mu2_tlv.SetXYZM(mu2_kinfit_par.At(3), mu2_kinfit_par.At(4), mu2_kinfit_par.At(5), mu2_kinfit_par.At(6));
           }
         } // end else - isEmpty()
-        
         ptvtx1 = mu1_tlv.Pt();
         etavtx1 = mu1_tlv.Eta();
         phivtx1 = mu1_tlv.Phi();

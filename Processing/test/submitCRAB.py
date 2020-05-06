@@ -5,37 +5,19 @@ samples={}
 
 samples['jpsi']=[
 
-'/Charmonium/Run2017B-31Mar2018-v1/MINIAOD',
-'/Charmonium/Run2017C-31Mar2018-v1/MINIAOD',
-'/Charmonium/Run2017D-31Mar2018-v1/MINIAOD',
-'/Charmonium/Run2017E-31Mar2018-v1/MINIAOD',
-'/Charmonium/Run2017F-31Mar2018-v1/MINIAOD',
-'/JPsiToMuMu_Pt20to100-pythia8-gun/RunIIFall17MiniAOD-RECOSIMstep_94X_mc2017_realistic_v10-v1/MINIAODSIM'
-
-]
-
-
-
-samples['upsilon']=[
-'/MuOnia/Run2017B-31Mar2018-v1/MINIAOD',
-'/MuOnia/Run2017C-31Mar2018-v1/MINIAOD',
-'/MuOnia/Run2017E-31Mar2018-v1/MINIAOD',
-'/MuOnia/Run2017F-31Mar2018-v1/MINIAOD',
-'/UpsilonMuMu_UpsilonPt6_TuneCUEP8M1_13TeV-pythia8-evtgen/RunIISummer17MiniAOD-NZSFlatPU28to62_92X_upgrade2017_realistic_v10-v1/MINIAODSIM'
+'/JPsiToMuMu_Pt20to100-pythia8-gun/RunIISummer16MiniAODv2-PUMoriond17RAW_80X_mcRun2_asymptotic_2016_TrancheIV_v6-v1/MINIAODSIM',
+'/JpsiToMuMu_JpsiPt8_TuneCUEP8M1_13TeV-pythia8-photos/RunIISummer16MiniAODv3-NoPU_94X_mcRun2_asymptotic_v3-v1/MINIAODSIM',
+'/JpsiToMuMu_JpsiPt8_TuneCUEP8M1_13TeV-pythia8/RunIISummer16MiniAODv2-PUMoriond17_80X_mcRun2_asymptotic_2016_TrancheIV_v6-v1/MINIAODSIM',
+'/JpsiToMuMu_JpsiPt8_TuneCUEP8M1_13TeV-pythia8/RunIISummer16MiniAODv3-NoPU_94X_mcRun2_asymptotic_v3_ext1-v1/MINIAODSIM',
+'/JpsiToMuMu_JpsiPt8_TuneCUEP8M1_13TeV-pythia8/RunIISummer16MiniAODv3-NoPU_94X_mcRun2_asymptotic_v3_ext1-v2/MINIAODSIM'
 
 ]
 
 samples['z']=[
-'/DoubleMuon/Run2017B-31Mar2018-v1/MINIAOD',
-'/DoubleMuon/Run2017C-31Mar2018-v1/MINIAOD',
-'/DoubleMuon/Run2017D-31Mar2018-v1/MINIAOD',
-'/DoubleMuon/Run2017F-31Mar2018-v1/MINIAOD',
-'/DYJetsToLL_M-50_TuneCP5_13TeV-amcatnloFXFX-pythia8/RunIIFall17MiniAOD-94X_mc2017_realistic_v10-v1/MINIAODSIM'
-
+'/ZJToMuMu_mWPilot_TuneCP5_13TeV-powheg-MiNNLO-pythia8-photos/RunIISummer16MiniAODv3-PUMoriond17_94X_mcRun2_asymptotic_v3-v1/MINIAODSIM',
+'DYJetsToLL_M-50_TuneCUETP8M1_13TeV-amcatnloFXFX-pythia8/RunIISummer16MiniAODv2-PUMoriond17_80X_mcRun2_asymptotic_2016_TrancheIV_v6_ext2-v1/MINIAODSIM'
 ]
-/afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions17/13TeV/ReReco/Cert_294927-306462_13TeV_EOY2017ReReco_Collisions17_JSON.txt
 json='https://cms-service-dqm.web.cern.ch/cms-service-dqm/CAF/certification/Collisions17/13TeV/ReReco/Cert_294927-306462_13TeV_EOY2017ReReco_Collisions17_JSON.txt'
-
 
 for resonance,slist in samples.iteritems():
     for i,s in enumerate(slist):
@@ -58,11 +40,12 @@ config.Data.inputDataset = '{dataset}'
 config.Data.inputDBS = 'global'
 
 config.Data.splitting = 'FileBased'
+config.Data.allowNonValidInputDataset = True
 config.Data.unitsPerJob = 5
 #config.Data.lumiMask = '{json}'
-config.Data.outLFNDirBase = '/store/user/bachtis/'
+config.Data.outLFNDirBase = '/store/user/emanca/KaMuCa/'
 config.Data.publication = False
-config.Site.storageSite = 'T3_US_FNALLPC'
+config.Site.storageSite = 'T2_IT_Pisa'
 
 """.format( name=resonance+"_"+str(i),cfgFile='runZ.py' if resonance=='z' else 'runOnia.py',dataset=s,json=json)
 
