@@ -99,6 +99,7 @@ private:
   edm::EDGetTokenT<reco::VertexCollection> vertices_;
   edm::EDGetTokenT<pat::METCollection> mets_;
   edm::EDGetTokenT<GenEventInfoProduct> genInfoToken_;
+  edm::EDGetTokenT<reco::BeamSpot> beamspot_;
 
   TFile *fout;
   TTree *tree;
@@ -273,6 +274,7 @@ MuonCalibAnalyzer::MuonCalibAnalyzer(const edm::ParameterSet &iConfig)
   vertices_ = consumes<reco::VertexCollection>(iConfig.getParameter<edm::InputTag>("vertices"));
   mets_ = consumes<pat::METCollection>(iConfig.getParameter<edm::InputTag>("met"));
   genInfoToken_ = consumes<GenEventInfoProduct>(edm::InputTag("generator"));
+  beamspot_ = consumes<reco::BeamSpot>(edm::InputTag("offlineBeamSpot"));
 
   isOnia_ = iConfig.getParameter<bool>("isOnia");
 
@@ -412,7 +414,7 @@ void MuonCalibAnalyzer::analyze(const edm::Event &iEvent, const edm::EventSetup 
 
   reco::BeamSpot beamSpot;
   Handle<reco::BeamSpot> beamSpotHandle;
-  iEvent.getByLabel("offlineBeamSpot", beamSpotHandle);
+  iEvent.getByToken(beamspot_, beamSpotHandle);
 
   for (unsigned int i = 0; i < N - 1; ++i)
   {
