@@ -487,28 +487,28 @@ void MuonCalibAnalyzer::analyze(const edm::Event &iEvent, const edm::EventSetup 
         dz2 = neg.innerTrack()->dz(vertex.position());
 
         //impact parameters wrt beamspot
-        if (beamSpotHandle.isValid())
-        {
-          beamSpot = *beamSpotHandle;
-          math::XYZPoint point(beamSpot.x0(), beamSpot.y0(), beamSpot.z0());
-          dxy1_bmsp = -1. * pos.innerTrack()->dxy(point);
-          dxy2_bmsp = -1. * neg.innerTrack()->dxy(point);
-          dz1_bmsp = pos.innerTrack()->dz(point);
-          dz2_bmsp = neg.innerTrack()->dz(point);
-          sigmaz_bmsp = beamSpot.sigmaZ();
-          widthx_bmsp = beamSpot.BeamWidthX();
-          widthy_bmsp = beamSpot.BeamWidthY();
-        }
-        else
-        {
-          dxy1_bmsp = -9999.;
-          dxy2_bmsp = -9999.;
-          dz1_bmsp =  -9999.;
-          dz2_bmsp =  -9999.;
-          sigmaz_bmsp = -9999.;
-          widthx_bmsp = -9999.;
-          widthy_bmsp = -9999.;
-        }
+        //if (beamSpotHandle.isValid())
+        //{
+        beamSpot = *beamSpotHandle;
+        math::XYZPoint point(beamSpot.x0(), beamSpot.y0(), beamSpot.z0());
+        dxy1_bmsp = -1. * pos.innerTrack()->dxy(point);
+        dxy2_bmsp = -1. * neg.innerTrack()->dxy(point);
+        dz1_bmsp = pos.innerTrack()->dz(point);
+        dz2_bmsp = neg.innerTrack()->dz(point);
+        sigmaz_bmsp = beamSpot.sigmaZ();
+        widthx_bmsp = beamSpot.BeamWidthX();
+        widthy_bmsp = beamSpot.BeamWidthY();
+        //}
+        //else
+        //{
+          //dxy1_bmsp = -9999.;
+          //dxy2_bmsp = -9999.;
+          //dz1_bmsp =  -9999.;
+          //dz2_bmsp =  -9999.;
+          //sigmaz_bmsp = -9999.;
+          //widthx_bmsp = -9999.;
+          //widthy_bmsp = -9999.;
+        //}
         
         pt2 = neg.innerTrack()->pt();
 
