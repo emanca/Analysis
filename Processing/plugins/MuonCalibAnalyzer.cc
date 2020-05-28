@@ -91,11 +91,11 @@ private:
   bool muonIDZ(const pat::Muon &, const reco::Vertex &);
   bool muonIDOnia(const pat::Muon &, const reco::Vertex &);
   bool selectResonance(const pat::Muon &, const pat::Muon &, const reco::Vertex &);
-  int findGenParticle(const pat::Muon &, const pat::PackedGenParticleCollection &);
+  int findGenParticle(const pat::Muon &, const reco::GenParticleCollection &);
 
   // ----------member data ---------------------------
   edm::EDGetTokenT<pat::MuonCollection> muons_;
-  edm::EDGetTokenT<pat::PackedGenParticleCollection> genParticles_;
+  edm::EDGetTokenT<reco::GenParticleCollection> genParticles_;
   edm::EDGetTokenT<reco::VertexCollection> vertices_;
   edm::EDGetTokenT<pat::METCollection> mets_;
   edm::EDGetTokenT<GenEventInfoProduct> genInfoToken_;
@@ -159,6 +159,19 @@ private:
   float mcyhs;
   float mczhs;
 
+  float dxy1_bmsp;
+  float dxy2_bmsp;
+  float dz1_bmsp;
+  float dz2_bmsp;
+  float sigmaz_bmsp;
+  float widthx_bmsp;
+  float widthy_bmsp;
+
+  float dxy1_mcvtx;
+  float dxy2_mcvtx;
+  float dz1_mcvtx;
+  float dz2_mcvtx;
+
   int run;
   float genWeight;
   bool isOnia_;
@@ -221,13 +234,13 @@ bool MuonCalibAnalyzer::selectResonance(const pat::Muon &m1, const pat::Muon &m2
   }
 }
 
-int MuonCalibAnalyzer::findGenParticle(const pat::Muon &mu, const pat::PackedGenParticleCollection &gen)
+int MuonCalibAnalyzer::findGenParticle(const pat::Muon &mu, const reco::GenParticleCollection &gen)
 {
   float drMin = 10000;
   int index = -1;
   for (unsigned int i = 0; i < gen.size(); ++i)
   {
-    const pat::PackedGenParticle &p = gen[i];
+    const auto &p = gen[i];
     float dr = deltaR(p.eta(), p.phi(), mu.eta(), mu.phi());
     if (dr < 0.1)
     {
@@ -256,7 +269,7 @@ MuonCalibAnalyzer::MuonCalibAnalyzer(const edm::ParameterSet &iConfig)
 {
   //now do what ever initialization is needed
   muons_ = consumes<pat::MuonCollection>(iConfig.getParameter<edm::InputTag>("muons"));
-  genParticles_ = consumes<pat::PackedGenParticleCollection>(iConfig.getParameter<edm::InputTag>("genParticles"));
+  genParticles_ = consumes<reco::GenParticleCollection>(iConfig.getParameter<edm::InputTag>("genParticles"));
   vertices_ = consumes<reco::VertexCollection>(iConfig.getParameter<edm::InputTag>("vertices"));
   mets_ = consumes<pat::METCollection>(iConfig.getParameter<edm::InputTag>("met"));
   genInfoToken_ = consumes<GenEventInfoProduct>(edm::InputTag("generator"));
@@ -319,6 +332,17 @@ MuonCalibAnalyzer::MuonCalibAnalyzer(const edm::ParameterSet &iConfig)
   tree->Branch("mcyhs", &mcyhs, "mcyhs/F");
   tree->Branch("mczhs", &mczhs, "mczhs/F");
   tree->Branch("genWeight", &genWeight, "genWeight/F");
+  tree->Branch("dxy1_bmsp", &dxy1_bmsp, "dxy1_bmsp/F");
+  tree->Branch("dxy2_bmsp", &dxy2_bmsp, "dxy2_bmsp/F");
+  tree->Branch("dz1_bmsp", &dz1_bmsp, "dz1_bmsp/F");
+  tree->Branch("dz2_bmsp", &dz2_bmsp, "dz2_bmsp/F");
+  tree->Branch("sigmaz_bmsp", &sigmaz_bmsp, "sigmaz_bmsp/F");
+  tree->Branch("widthx_bmsp", &widthx_bmsp, "widthx_bmsp/F");
+  tree->Branch("widthy_bmsp", &widthy_bmsp, "widthy_bmsp/F");
+  tree->Branch("dxy1_mcvtx", &dxy1_mcvtx, "dxy1_mcvtx/F");
+  tree->Branch("dxy2_mcvtx", &dxy2_mcvtx, "dxy2_mcvtx/F");
+  tree->Branch("dz1_mcvtx", &dz1_mcvtx, "dz1_mcvtx/F");
+  tree->Branch("dz2_mcvtx", &dz2_mcvtx, "dz2_mcvtx/F");
 }
 
 MuonCalibAnalyzer::~MuonCalibAnalyzer()
@@ -337,19 +361,19 @@ void MuonCalibAnalyzer::analyze(const edm::Event &iEvent, const edm::EventSetup 
 {
   using namespace edm;
 
-  pat::PackedGenParticleCollection genMuons;
+  reco::GenParticleCollection genMuons;
 
   if (iEvent.run() < 50000)
   {
-    Handle<pat::PackedGenParticleCollection> genParticlesH;
+    Handle<reco::GenParticleCollection> genParticlesH;
     iEvent.getByToken(genParticles_, genParticlesH);
     for (unsigned int i = 0; i < genParticlesH->size(); ++i)
     {
-      const pat::PackedGenParticle &p = (*genParticlesH)[i];
+      const auto &p = (*genParticlesH)[i];
       if (abs(p.pdgId()) == 13 and p.status() == 1)
         genMuons.push_back(p);
     }
-    const pat::PackedGenParticle &proton = (*genParticlesH)[0];
+    const auto &proton = (*genParticlesH)[0];
     mcxhs = proton.vx();
     mcyhs = proton.vy();
     mczhs = proton.vz();
@@ -385,6 +409,10 @@ void MuonCalibAnalyzer::analyze(const edm::Event &iEvent, const edm::EventSetup 
   iEvent.getByToken(mets_, metH);
 
   reco::Candidate::LorentzVector metV = (*metH)[0].p4();
+
+  reco::BeamSpot beamSpot;
+  Handle<reco::BeamSpot> beamSpotHandle;
+  iEvent.getByLabel("offlineBeamSpot", beamSpotHandle);
 
   for (unsigned int i = 0; i < N - 1; ++i)
   {
@@ -430,6 +458,13 @@ void MuonCalibAnalyzer::analyze(const edm::Event &iEvent, const edm::EventSetup 
           mcxvtx = genMuons[ptr1].vx();
           mcyvtx = genMuons[ptr1].vy();
           mczvtx = genMuons[ptr1].vz();
+
+          //impact parameters wrt gen vtx (MC only)
+          math::XYZPoint point(mcxvtx, mcyvtx, mczvtx);
+          dxy1_mcvtx = -1. * pos.innerTrack()->dxy(point);
+          dxy2_mcvtx = -1. * neg.innerTrack()->dxy(point);
+          dz1_mcvtx = pos.innerTrack()->dz(point);
+          dz2_mcvtx = neg.innerTrack()->dz(point);
         }
         else
         {
@@ -440,13 +475,41 @@ void MuonCalibAnalyzer::analyze(const edm::Event &iEvent, const edm::EventSetup 
           mcxvtx = -9999.;
           mcyvtx = -9999.;
           mczvtx = -9999.;
+          dxy1_mcvtx = -9999.;
+          dxy2_mcvtx = -9999.;
+          dz1_mcvtx = -9999.;
+          dz2_mcvtx = -9999.;
         }
-
+        //impact parameters wrt PV
         dxy1 = pos.innerTrack()->dxy(vertex.position());
         dxy2 = neg.innerTrack()->dxy(vertex.position());
         dz1 = pos.innerTrack()->dz(vertex.position());
         dz2 = neg.innerTrack()->dz(vertex.position());
 
+        //impact parameters wrt beamspot
+        if (beamSpotHandle.isValid())
+        {
+          beamSpot = *beamSpotHandle;
+          math::XYZPoint point(beamSpot.x0(), beamSpot.y0(), beamSpot.z0());
+          dxy1_bmsp = -1. * pos.innerTrack()->dxy(point);
+          dxy2_bmsp = -1. * neg.innerTrack()->dxy(point);
+          dz1_bmsp = pos.innerTrack()->dz(point);
+          dz2_bmsp = neg.innerTrack()->dz(point);
+          sigmaz_bmsp = beamSpot.sigmaZ();
+          widthx_bmsp = beamSpot.BeamWidthX();
+          widthy_bmsp = beamSpot.BeamWidthY();
+        }
+        else
+        {
+          dxy1_bmsp = -9999.;
+          dxy2_bmsp = -9999.;
+          dz1_bmsp =  -9999.;
+          dz2_bmsp =  -9999.;
+          sigmaz_bmsp = -9999.;
+          widthx_bmsp = -9999.;
+          widthy_bmsp = -9999.;
+        }
+        
         pt2 = neg.innerTrack()->pt();
 
         if (neg.isGlobalMuon() && neg.standAloneMuon().isNonnull())
