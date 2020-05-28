@@ -24,7 +24,7 @@ process.source = cms.Source("PoolSource",
 process.analysis = cms.EDAnalyzer('MuonCalibAnalyzer',
                                   muons = cms.InputTag("slimmedMuons"),
                                   met = cms.InputTag("slimmedMETs"),
-                                  genParticles = cms.InputTag("packedGenParticles"),
+                                  genParticles = cms.InputTag("prunedGenParticles"),
                                   vertices = cms.InputTag("offlineSlimmedPrimaryVertices"),
                                   isOnia = cms.bool(False)
 )
