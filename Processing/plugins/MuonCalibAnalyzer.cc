@@ -142,6 +142,39 @@ private:
   float phivtx2;
   float ptErrvtx2;
 
+  // track parameters
+  float cov1_00;
+  float cov1_01;
+  float cov1_02;
+  float cov1_03;
+  float cov1_04;
+  float cov1_11;
+  float cov1_12;
+  float cov1_13;
+  float cov1_14;
+  float cov1_22;
+  float cov1_23;
+  float cov1_24;
+  float cov1_33;
+  float cov1_34;
+  float cov1_44;
+
+  float cov2_00;
+  float cov2_01;
+  float cov2_02;
+  float cov2_03;
+  float cov2_04;
+  float cov2_11;
+  float cov2_12;
+  float cov2_13;
+  float cov2_14;
+  float cov2_22;
+  float cov2_23;
+  float cov2_24;
+  float cov2_33;
+  float cov2_34;
+  float cov2_44;
+
   float mass;
   float massErr;
   float genMass;
@@ -345,6 +378,36 @@ MuonCalibAnalyzer::MuonCalibAnalyzer(const edm::ParameterSet &iConfig)
   tree->Branch("dxy2_mcvtx", &dxy2_mcvtx, "dxy2_mcvtx/F");
   tree->Branch("dz1_mcvtx", &dz1_mcvtx, "dz1_mcvtx/F");
   tree->Branch("dz2_mcvtx", &dz2_mcvtx, "dz2_mcvtx/F");
+  tree->Branch("cov1_00", &cov1_00, "cov1_00/F");
+  tree->Branch("cov1_01", &cov1_01, "cov1_01/F");
+  tree->Branch("cov1_02", &cov1_02, "cov1_02/F");
+  tree->Branch("cov1_03", &cov1_03, "cov1_03/F");
+  tree->Branch("cov1_04", &cov1_04, "cov1_04/F");
+  tree->Branch("cov1_11", &cov1_11, "cov1_11/F");
+  tree->Branch("cov1_12", &cov1_12, "cov1_12/F");
+  tree->Branch("cov1_13", &cov1_13, "cov1_13/F");
+  tree->Branch("cov1_14", &cov1_14, "cov1_14/F");
+  tree->Branch("cov1_22", &cov1_22, "cov1_22/F");
+  tree->Branch("cov1_23", &cov1_23, "cov1_23/F");
+  tree->Branch("cov1_24", &cov1_24, "cov1_24/F");
+  tree->Branch("cov1_33", &cov1_33, "cov1_33/F");
+  tree->Branch("cov1_34", &cov1_34, "cov1_34/F");
+  tree->Branch("cov1_44", &cov1_44, "cov1_44/F");
+  tree->Branch("cov2_00", &cov2_00, "cov2_00/F");
+  tree->Branch("cov2_01", &cov2_01, "cov2_01/F");
+  tree->Branch("cov2_02", &cov2_02, "cov2_02/F");
+  tree->Branch("cov2_03", &cov2_03, "cov2_03/F");
+  tree->Branch("cov2_04", &cov2_04, "cov2_04/F");
+  tree->Branch("cov2_11", &cov2_11, "cov2_11/F");
+  tree->Branch("cov2_12", &cov2_12, "cov2_12/F");
+  tree->Branch("cov2_13", &cov2_13, "cov2_13/F");
+  tree->Branch("cov2_14", &cov2_14, "cov2_14/F");
+  tree->Branch("cov2_22", &cov2_22, "cov2_22/F");
+  tree->Branch("cov2_23", &cov2_23, "cov2_23/F");
+  tree->Branch("cov2_24", &cov2_24, "cov2_24/F");
+  tree->Branch("cov2_33", &cov2_33, "cov2_33/F");
+  tree->Branch("cov2_34", &cov2_34, "cov2_34/F");
+  tree->Branch("cov2_44", &cov2_44, "cov2_44/F");
 }
 
 MuonCalibAnalyzer::~MuonCalibAnalyzer()
@@ -447,6 +510,21 @@ void MuonCalibAnalyzer::analyze(const edm::Event &iEvent, const edm::EventSetup 
         c1 = 1.0 / pt1;
         eta1 = pos.innerTrack()->eta();
         phi1 = pos.innerTrack()->phi();
+        cov1_00 = pos.innerTrack()->covariance(0,0);
+        cov1_01 = pos.innerTrack()->covariance(0,1);
+        cov1_02 = pos.innerTrack()->covariance(0,2);
+        cov1_03 = pos.innerTrack()->covariance(0,3);
+        cov1_04 = pos.innerTrack()->covariance(0,4);
+        cov1_11 = pos.innerTrack()->covariance(1,1);
+        cov1_12 = pos.innerTrack()->covariance(1,2);
+        cov1_13 = pos.innerTrack()->covariance(1,3);
+        cov1_14 = pos.innerTrack()->covariance(1,4);
+        cov1_22 = pos.innerTrack()->covariance(2,2);
+        cov1_23 = pos.innerTrack()->covariance(2,3);
+        cov1_24 = pos.innerTrack()->covariance(2,4);
+        cov1_33 = pos.innerTrack()->covariance(3,3);
+        cov1_34 = pos.innerTrack()->covariance(3,4);
+        cov1_44 = pos.innerTrack()->covariance(4,4);
         int ptr1 = findGenParticle(pos, genMuons);
 
         //	   printf("Track length=%f\n",pos.innerTrack()->outerPosition().rho()-pos.innerTrack()->innerPosition().rho());
@@ -524,6 +602,21 @@ void MuonCalibAnalyzer::analyze(const edm::Event &iEvent, const edm::EventSetup 
         c2 = 1.0 / pt2;
         eta2 = neg.innerTrack()->eta();
         phi2 = neg.innerTrack()->phi();
+        cov2_00 = neg.innerTrack()->covariance(0, 0);
+        cov2_01 = neg.innerTrack()->covariance(0, 1);
+        cov2_02 = neg.innerTrack()->covariance(0, 2);
+        cov2_03 = neg.innerTrack()->covariance(0, 3);
+        cov2_04 = neg.innerTrack()->covariance(0, 4);
+        cov2_11 = neg.innerTrack()->covariance(1, 1);
+        cov2_12 = neg.innerTrack()->covariance(1, 2);
+        cov2_13 = neg.innerTrack()->covariance(1, 3);
+        cov2_14 = neg.innerTrack()->covariance(1, 4);
+        cov2_22 = neg.innerTrack()->covariance(2, 2);
+        cov2_23 = neg.innerTrack()->covariance(2, 3);
+        cov2_24 = neg.innerTrack()->covariance(2, 4);
+        cov2_33 = neg.innerTrack()->covariance(3, 3);
+        cov2_34 = neg.innerTrack()->covariance(3, 4);
+        cov2_44 = neg.innerTrack()->covariance(4, 4);
         int ptr2 = findGenParticle(neg, genMuons);
 
         if (ptr2 >= 0)
